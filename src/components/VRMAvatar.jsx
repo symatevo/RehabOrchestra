@@ -7,6 +7,7 @@ import { Euler, Quaternion } from "three";
 import { VRM_AVATAR_FILES } from "../data/avatars.js";
 import { useGameStore } from "../store/useGameStore.js";
 import { remapMixamoAnimationToVrm } from "../utils/remapMixamoAnimationToVrm.jsx";
+import { publicUrl } from "../utils/publicUrl.js";
 
 /** After play/results → lobby, resync spring simulation with the scene graph. */
 const SPRING_SOAK_AFTER_LOBBY_RETURN = 100;
@@ -374,7 +375,7 @@ function applyMirroredRightFromLeftSolve(vrm, pose, rigL, delta) {
 
 export function VRMAvatar({ avatar, ...props }) {
   const { scene, userData } = useGLTF(
-    `models/${avatar}`,
+    publicUrl(`models/${avatar}`),
     undefined,
     undefined,
     (loader) => {
@@ -382,7 +383,7 @@ export function VRMAvatar({ avatar, ...props }) {
     }
   );
 
-  const idleAsset = useFBX("models/animations/Breathing Idle.fbx");
+  const idleAsset = useFBX(publicUrl("models/animations/Breathing Idle.fbx"));
   const vrm = userData.vrm;
 
   const idleClip = useMemo(() => {
@@ -583,8 +584,8 @@ export function VRMAvatar({ avatar, ...props }) {
 }
 
 for (const file of VRM_AVATAR_FILES) {
-  useGLTF.preload(`models/${file}`, undefined, undefined, (loader) => {
+  useGLTF.preload(publicUrl(`models/${file}`), undefined, undefined, (loader) => {
     loader.register((parser) => new VRMLoaderPlugin(parser));
   });
 }
-useFBX.preload("models/animations/Breathing Idle.fbx");
+useFBX.preload(publicUrl("models/animations/Breathing Idle.fbx"));

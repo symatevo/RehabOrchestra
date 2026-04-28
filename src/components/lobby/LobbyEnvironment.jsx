@@ -8,9 +8,10 @@ import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { SRGBColorSpace } from "three";
 import { SkeletonUtils } from "three-stdlib";
 import { Butterfly3D } from "../level/Butterfly3D.jsx";
+import { publicUrl } from "../../utils/publicUrl.js";
 
-const GRASS_URL = "models/Overall design/animated_grass.glb";
-const BUSH_URL = "models/Overall design/simple_bush.glb";
+const GRASS_URL = publicUrl("models/Overall design/animated_grass.glb");
+const BUSH_URL = publicUrl("models/Overall design/simple_bush.glb");
 
 function AnimatedGrass({ position, rotation, scale }) {
   const group = useRef();
@@ -83,9 +84,9 @@ function StonePath() {
 }
 
 function BackgroundImage() {
-  const skyTexture = useTexture("models/Overall design/sky.png");
-  const floorTexture = useTexture("models/Overall design/floor.png");
-  const grassTexture = useTexture("models/Overall design/grass.png");
+  const skyTexture = useTexture(publicUrl("models/Overall design/sky.png"));
+  const floorTexture = useTexture(publicUrl("models/Overall design/floor.png"));
+  const grassTexture = useTexture(publicUrl("models/Overall design/grass.png"));
 
   useLayoutEffect(() => {
     floorTexture.colorSpace = SRGBColorSpace;

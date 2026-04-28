@@ -12,9 +12,10 @@ import { useGameStore } from "./store/useGameStore.js";
 import { t } from "./i18n/strings.js";
 import { orchestraToneEngine } from "./audio/orchestraToneEngine.js";
 import { resumeAudioContext } from "./audio/missFx.js";
+import { publicUrl } from "./utils/publicUrl.js";
 
-/** Drop your clip here as `public/tutorial.mp4` (same folder as built assets). */
-const TUTORIAL_VIDEO_SRC = "video/Tutorial.mp4";
+/** Resolved with publicUrl so GitHub Pages /repo/ works without a trailing slash on the URL. */
+const TUTORIAL_VIDEO_SRC = publicUrl("video/Tutorial.mp4");
 
 function PauseOverlay() {
   const locale = useGameStore((s) => s.locale);
@@ -284,7 +285,7 @@ function ResultsScreen() {
   const resolved = hits + misses;
   const accuracyPct = resolved > 0 ? Math.round((hits / resolved) * 100) : 100;
   useEffect(() => {
-    const audio = new Audio("/audio/applause.mp3");
+    const audio = new Audio(publicUrl("audio/applause.mp3"));
     audio.volume = 0.88;
     audio.play().catch(() => {});
     return () => {

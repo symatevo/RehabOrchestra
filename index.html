@@ -3,6 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      (function () {
+        try {
+          var host = location.hostname || "";
+          if (host.slice(-9) !== "github.io") return;
+          var segments = location.pathname.split("/").filter(Boolean);
+          if (segments.length >= 1) window.__REHAB_PUBLIC_BASE__ = "/" + segments[0] + "/";
+        } catch (_) {}
+      })();
+    </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>Mirror Rehab</title>
   </head>
