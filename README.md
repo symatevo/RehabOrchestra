@@ -25,14 +25,9 @@ yarn
 yarn dev
 ```
 
-## Production build
+After `yarn build`, open the preview at **`http://localhost:4173/RehabOrchestra/`** (the production build uses `/RehabOrchestra/` as in `package.json` **homepage**).
 
-```bash
-yarn build
-yarn preview
-```
-
-The app uses Vite `base: './'` so static assets resolve correctly under **https://symatevo.github.io/RehabOrchestra/** (and locally) without hardcoding the repo path.
+The app uses **`/RehabOrchestra/`** as the Vite production `base` so public assets and hashed JS/CSS match **https://symatevo.github.io/RehabOrchestra/**. If you rename the repo, update **homepage** in `package.json`, then rebuild.
 
 ## First-time push from this PC
 
