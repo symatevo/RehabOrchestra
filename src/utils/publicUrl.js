@@ -3,12 +3,41 @@
 /**
  * Absolute URLs for `public/` files on GitHub Pages (/RepoName/...).
  *
- * 1. __REHAB_PUBLISHED_BASE__ (vite define from package.json homepage)
- * 2. window.location.pathname on *.github.io (first segment ≈ repo folder)
- * 3. DOM module script paths, import.meta.url, BASE_URL, __REHAB_PUBLIC_BASE__
+ * Primary: resolve each path relative to `document.baseURI` (directory base).
+ * That avoids path-absolute "/file" URLs — those resolve to `github.io/file`,
+ * not `/Repo/file`, even when `index.html` is served under `/Repo/`.
+ *
+ * Fallback: define + pathname heuristics (workers / no document).
  */
+
 export function publicUrl(path) {
   const trimmed = path.replace(/^\/+/, "");
+  if (typeof document !== "undefined") {
+    try {
+      const base = directoryBaseHref(document.baseURI || window.location.href);
+      const out = new URL(trimmed, base);
+      return out.pathname + out.search + out.hash;
+    } catch (_) {
+      /* fall through */
+    }
+  }
+  return publicUrlConcatFallback(trimmed);
+}
+
+/** Treat current document URL as a directory so `game-sky.png` → `/Repo/game-sky.png`. */
+function directoryBaseHref(href) {
+  try {
+    const u = new URL(href);
+    if (!u.pathname.endsWith("/")) {
+      u.pathname += "/";
+    }
+    return u.href;
+  } catch {
+    return href;
+  }
+}
+
+function publicUrlConcatFallback(trimmed) {
   let base = effectiveAssetBasePrefix();
   if (base !== "./" && !base.endsWith("/")) base += "/";
   if (base === "./") return `./${trimmed}`;
@@ -24,8 +53,6 @@ function effectiveAssetBasePrefix() {
   );
   if (hard) return hard;
 
-  // Project Pages: app is at user.github.io/RepoName/ — read first path segment.
-  // Runs before import.meta fallbacks (SES/cached bundles can make those unreliable).
   const ghPath = githubIoRepoBaseFromLocation();
   if (ghPath) return ghPath;
 
@@ -36,7 +63,9 @@ function effectiveAssetBasePrefix() {
   if (fromChunk) return fromChunk;
 
   const raw =
-    typeof import.meta.env.BASE_URL === "string" ? import.meta.env.BASE_URL : "/";
+    typeof import.meta.env.BASE_URL === "string"
+      ? import.meta.env.BASE_URL
+      : "/";
 
   if (raw !== "/" && raw !== "./" && raw !== "") {
     return raw.endsWith("/") ? raw : `${raw}/`;
@@ -52,11 +81,12 @@ function effectiveAssetBasePrefix() {
   return raw === "./" ? "./" : "/";
 }
 
-/** user.github.io/Repo/... → /Repo/ (same idea as index.html inline script). */
+/** user.github.io/Repo/... → /Repo/ */
 function githubIoRepoBaseFromLocation() {
   if (typeof window === "undefined") return null;
   const { hostname, pathname } = window.location;
-  if (!(hostname.endsWith(".github.io") || hostname === "github.io")) return null;
+  if (!(hostname.endsWith(".github.io") || hostname === "github.io"))
+    return null;
   const first = pathname.split("/").filter(Boolean)[0];
   if (!first) return null;
   return `/${first}/`;
