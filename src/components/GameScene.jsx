@@ -9,6 +9,7 @@ import {
   Vector3,
 } from "three";
 import { useGameStore } from "../store/useGameStore.js";
+import { publicUrl } from "../utils/publicUrl.js";
 import { LobbyEnvironment } from "./lobby/LobbyEnvironment.jsx";
 import { SessionButterflies } from "./level/SessionButterflies.jsx";
 import { SessionWideSparkles } from "./level/SessionWideSparkles.jsx";
@@ -29,7 +30,6 @@ const PLAYING_STAGE = {
   lipSize: [24, 0.08, 0.28],
 };
 
-const GAME_SKY_URL = "/game-sky.png";
 const CONDUCTOR = {
   groupPos: [0, -1, -4.5],
   avatarPos: [0, 0.23, 0],
@@ -223,7 +223,8 @@ function ConductorPodium() {
 }
 
 function PlayingSkyBackdrop() {
-  const tex = useTexture(GAME_SKY_URL);
+  const skyUrl = useMemo(() => publicUrl("game-sky.png"), []);
+  const tex = useTexture(skyUrl);
   tex.colorSpace = SRGBColorSpace;
 
   return (

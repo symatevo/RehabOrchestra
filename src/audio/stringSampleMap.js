@@ -1,7 +1,8 @@
+import { publicUrl } from "../utils/publicUrl.js";
+
 export const STRING_SAMPLE_LIBRARY = {
   // Open sample source mirrored into project-local public assets.
   source: "FluidR3_GM (midi-js-soundfonts)",
-  baseUrl: "/music/samples/strings",
   instruments: {
     violin: {
       urls: {
@@ -61,7 +62,10 @@ export function getSamplerConfig(instrument) {
   const cfg = STRING_SAMPLE_LIBRARY.instruments[instrument];
   if (!cfg) return null;
   const urls = Object.fromEntries(
-    Object.entries(cfg.urls).map(([note, relPath]) => [note, `${STRING_SAMPLE_LIBRARY.baseUrl}/${relPath}`])
+    Object.entries(cfg.urls).map(([note, relPath]) => [
+      note,
+      publicUrl(`music/samples/strings/${relPath}`),
+    ]),
   );
   return {
     urls,

@@ -16,9 +16,16 @@ const ghMatch =
 /** e.g. /RehabOrchestra/ — must match GitHub Pages project URL */
 const ghPagesRepoBase = ghMatch ? `/${ghMatch[1]}/` : "/";
 
-export default defineConfig(({ mode }) => ({
-  root: __dirname,
-  /** Dev uses /. Builds & preview use /RepoName/ so assets match *.github.io/Repo/. */
-  base: mode === "development" ? "/" : ghPagesRepoBase,
-  plugins: [react(), tailwindcss()],
-}));
+export default defineConfig(({ mode }) => {
+  const isDev = mode === "development";
+  return {
+    root: __dirname,
+    /** Dev uses /. Builds & preview use /RepoName/ */
+    base: isDev ? "/" : ghPagesRepoBase,
+    plugins: [react(), tailwindcss()],
+    define: {
+      /** Inlined into publicUrl.js — survives SES/import.meta tampering (GitHub Pages prod only). */
+      __REHAB_PUBLISHED_BASE__: JSON.stringify(isDev ? "" : ghPagesRepoBase),
+    },
+  };
+});

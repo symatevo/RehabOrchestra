@@ -1,23 +1,24 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { useGameStore } from "../../store/useGameStore.js";
+import { publicUrl } from "../../utils/publicUrl.js";
 
 // All dimensions verified from actual image pixel sizes + CSS position tables.
 const PLAYER_VARIANTS = {
   cello1: {
-    idle:   { url: "/models/Orchestra/cello1-normal-sprite/spritesheet.png", frameW: 306, frameH: 485, cols: 4, rows: 2, frames: 1 },
-    normal: { url: "/models/Orchestra/cello1-normal-sprite/spritesheet.png", frameW: 306, frameH: 485, cols: 4, rows: 2, frames: 8 },
+    idle:   { url: publicUrl("models/Orchestra/cello1-normal-sprite/spritesheet.png"), frameW: 306, frameH: 485, cols: 4, rows: 2, frames: 1 },
+    normal: { url: publicUrl("models/Orchestra/cello1-normal-sprite/spritesheet.png"), frameW: 306, frameH: 485, cols: 4, rows: 2, frames: 8 },
   },
   cello2: {
-    idle:   { url: "/models/Orchestra/cello3-normal-sprite/spritesheet.png", frameW: 325, frameH: 502, cols: 4, rows: 2, frames: 1 },
-    normal: { url: "/models/Orchestra/cello3-normal-sprite/spritesheet.png", frameW: 325, frameH: 502, cols: 4, rows: 2, frames: 8 },
+    idle:   { url: publicUrl("models/Orchestra/cello3-normal-sprite/spritesheet.png"), frameW: 325, frameH: 502, cols: 4, rows: 2, frames: 1 },
+    normal: { url: publicUrl("models/Orchestra/cello3-normal-sprite/spritesheet.png"), frameW: 325, frameH: 502, cols: 4, rows: 2, frames: 8 },
   },
   cello3: {
-    idle:   { url: "/models/Orchestra/cello3-normal-sprite/spritesheet.png", frameW: 325, frameH: 502, cols: 4, rows: 2, frames: 1 },
-    normal: { url: "/models/Orchestra/cello3-normal-sprite/spritesheet.png", frameW: 325, frameH: 502, cols: 4, rows: 2, frames: 8 },
+    idle:   { url: publicUrl("models/Orchestra/cello3-normal-sprite/spritesheet.png"), frameW: 325, frameH: 502, cols: 4, rows: 2, frames: 1 },
+    normal: { url: publicUrl("models/Orchestra/cello3-normal-sprite/spritesheet.png"), frameW: 325, frameH: 502, cols: 4, rows: 2, frames: 8 },
   },
   cello4: {
-    idle:   { url: "/models/Orchestra/cello4-normal-sprite/spritesheet.png", frameW: 325, frameH: 496, cols: 4, rows: 2, frames: 1 },
-    normal: { url: "/models/Orchestra/cello4-normal-sprite/spritesheet.png", frameW: 325, frameH: 496, cols: 4, rows: 2, frames: 8 },
+    idle:   { url: publicUrl("models/Orchestra/cello4-normal-sprite/spritesheet.png"), frameW: 325, frameH: 496, cols: 4, rows: 2, frames: 1 },
+    normal: { url: publicUrl("models/Orchestra/cello4-normal-sprite/spritesheet.png"), frameW: 325, frameH: 496, cols: 4, rows: 2, frames: 8 },
   },
 };
 

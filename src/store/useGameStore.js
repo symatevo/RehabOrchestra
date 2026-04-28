@@ -4,12 +4,13 @@ import {
   DEFAULT_VRM_AVATAR_INDEX,
   VRM_AVATAR_FILES,
 } from "../data/avatars.js";
+import { publicUrl } from "../utils/publicUrl.js";
 
 /** @typedef {'en' | 'hy'} Locale */
 /** @typedef {'left' | 'right'} Side */
 /** @typedef {'setup' | 'playing' | 'results'} Screen */
 
-export const MUSIC_SRC = "/music/game.mp3";
+export const MUSIC_SRC = publicUrl("music/game.mp3");
 
 export const useGameStore = create((set, get) => ({
   levelId: "level1",

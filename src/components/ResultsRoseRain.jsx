@@ -1,5 +1,7 @@
 import { useMemo } from "react";
 
+import { publicUrl } from "../utils/publicUrl.js";
+
 const ROSE_COUNT = 42;
 
 export function ResultsRoseRain() {
@@ -29,7 +31,7 @@ export function ResultsRoseRain() {
       {roses.map((r) => (
         <img
           key={r.id}
-          src="/rose.png"
+          src={publicUrl("rose.png")}
           alt=""
           className="results-rose absolute opacity-90 will-change-transform"
           style={{

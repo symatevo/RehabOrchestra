@@ -1,22 +1,23 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { useGameStore } from "../../store/useGameStore.js";
+import { publicUrl } from "../../utils/publicUrl.js";
 
 const PLAYER_VARIANTS = {
   viola1: {
-    idle:   { url: "/models/Orchestra/viola1-normal-sprite/spritesheet.png", frameW: 292, frameH: 482, cols: 2, rows: 2, frames: 1 },
-    normal: { url: "/models/Orchestra/viola1-normal-sprite/spritesheet.png", frameW: 292, frameH: 482, cols: 2, rows: 2, frames: 4 },
+    idle:   { url: publicUrl("models/Orchestra/viola1-normal-sprite/spritesheet.png"), frameW: 292, frameH: 482, cols: 2, rows: 2, frames: 1 },
+    normal: { url: publicUrl("models/Orchestra/viola1-normal-sprite/spritesheet.png"), frameW: 292, frameH: 482, cols: 2, rows: 2, frames: 4 },
   },
   viola2: {
-    idle:   { url: "/models/Orchestra/viola2-normal-sprite/spritesheet.png", frameW: 299, frameH: 489, cols: 4, rows: 2, frames: 1 },
-    normal: { url: "/models/Orchestra/viola2-normal-sprite/spritesheet.png", frameW: 299, frameH: 489, cols: 4, rows: 2, frames: 8 },
+    idle:   { url: publicUrl("models/Orchestra/viola2-normal-sprite/spritesheet.png"), frameW: 299, frameH: 489, cols: 4, rows: 2, frames: 1 },
+    normal: { url: publicUrl("models/Orchestra/viola2-normal-sprite/spritesheet.png"), frameW: 299, frameH: 489, cols: 4, rows: 2, frames: 8 },
   },
   viola3: {
-    idle:   { url: "/models/Orchestra/viola3-normal-sprite/spritesheet.png", frameW: 311, frameH: 509, cols: 2, rows: 2, frames: 1 },
-    normal: { url: "/models/Orchestra/viola3-normal-sprite/spritesheet.png", frameW: 311, frameH: 509, cols: 2, rows: 2, frames: 4 },
+    idle:   { url: publicUrl("models/Orchestra/viola3-normal-sprite/spritesheet.png"), frameW: 311, frameH: 509, cols: 2, rows: 2, frames: 1 },
+    normal: { url: publicUrl("models/Orchestra/viola3-normal-sprite/spritesheet.png"), frameW: 311, frameH: 509, cols: 2, rows: 2, frames: 4 },
   },
   viola4: {
-    idle:   { url: "/models/Orchestra/viola4-normal-sprite/spritesheet.png", frameW: 325, frameH: 484, cols: 4, rows: 1, frames: 1 },
-    normal: { url: "/models/Orchestra/viola4-normal-sprite/spritesheet.png", frameW: 325, frameH: 484, cols: 4, rows: 1, frames: 4 },
+    idle:   { url: publicUrl("models/Orchestra/viola4-normal-sprite/spritesheet.png"), frameW: 325, frameH: 484, cols: 4, rows: 1, frames: 1 },
+    normal: { url: publicUrl("models/Orchestra/viola4-normal-sprite/spritesheet.png"), frameW: 325, frameH: 484, cols: 4, rows: 1, frames: 4 },
   },
 };
 
