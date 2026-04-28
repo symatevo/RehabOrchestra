@@ -1,0 +1,40 @@
+{
+  "name": "mirror-rehab-game",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "build:level3": "node scripts/midiToOrchestraJson.mjs public/music/song/Midi/tchaikovsky_swan_lake_05_(c)lucarelli.mid src/data/orchestra/swanLakeSong.json \"Swan Lake (excerpt)\"",
+    "build:level4": "node scripts/midiToOrchestraJson.mjs public/music/song/Midi/tchaikovsky_nutcracker_act-2_14_pas_des_deux_(c)yogore.mid src/data/orchestra/nutcrackerPasSong.json \"Nutcracker - Pas de deux (excerpt)\"",
+    "cleanup:public": "node scripts/cleanupUnusedPublic.mjs"
+  },
+  "dependencies": {
+    "@mediapipe/camera_utils": "^0.3.1675466862",
+    "@mediapipe/drawing_utils": "^0.3.1675466124",
+    "@mediapipe/hands": "^0.4.1675469240",
+    "@mediapipe/holistic": "^0.5.1675471629",
+    "@pixiv/three-vrm": "^3.5.0",
+    "@react-three/drei": "^10.0.3",
+    "@react-three/fiber": "^9.0.4",
+    "@react-three/postprocessing": "^3.0.4",
+    "@tailwindcss/vite": "^4.1.4",
+    "gsap": "^3.15.0",
+    "kalidokit": "^1.1.5",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "three": "^0.173.0",
+    "tone": "^15.1.22",
+    "zustand": "^5.0.11"
+  },
+  "devDependencies": {
+    "@tonejs/midi": "^2.0.28",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@vitejs/plugin-react": "^4.3.4",
+    "globals": "^15.15.0",
+    "vite": "^6.2.0"
+  }
+}
