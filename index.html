@@ -6,10 +6,11 @@
     <script>
       (function () {
         try {
-          var host = location.hostname || "";
-          if (host.slice(-9) !== "github.io") return;
+          var hn = location.hostname || "";
+          if (!(hn.endsWith(".github.io") || hn === "github.io")) return;
           var segments = location.pathname.split("/").filter(Boolean);
-          if (segments.length >= 1) window.__REHAB_PUBLIC_BASE__ = "/" + segments[0] + "/";
+          if (segments.length >= 1)
+            window.__REHAB_PUBLIC_BASE__ = "/" + segments[0] + "/";
         } catch (_) {}
       })();
     </script>
