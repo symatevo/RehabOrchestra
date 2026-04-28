@@ -8,11 +8,15 @@ Vite + React + React Three Fiber rehab game with camera / Mediapipe.
 
 ## Live demo
 
-After GitHub Actions completes, the game is served at:
+**Required once (or deploy fails with “Ensure GitHub Pages has been enabled”):**
+
+1. Open **[repo → Settings → Pages](https://github.com/symatevo/RehabOrchestra/settings/pages)**.
+2. Under **Build and deployment**, set **Source** to **GitHub Actions** (not “Deploy from a branch”).
+3. Go to **Actions**, open the latest **Deploy to GitHub Pages** run, and click **Re-run all jobs** (or push any commit).
+
+Then the app is served at:
 
 **<https://symatevo.github.io/RehabOrchestra/>**
-
-(Enable **Settings → Pages → Build and deployment: GitHub Actions** on first setup if the site does not appear.)
 
 ## Local development
 
@@ -28,7 +32,7 @@ yarn build
 yarn preview
 ```
 
-For GitHub Pages the workflow sets `GITHUB_PAGES_BASE=/RehabOrchestra/`; locally, `vite.config.js` defaults to `/`.
+The app uses Vite `base: './'` so static assets resolve correctly under **https://symatevo.github.io/RehabOrchestra/** (and locally) without hardcoding the repo path.
 
 ## First-time push from this PC
 

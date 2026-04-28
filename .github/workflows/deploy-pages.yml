@@ -26,8 +26,6 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
       - name: Build
-        env:
-          GITHUB_PAGES_BASE: /${{ github.event.repository.name }}/
         run: yarn build
       - uses: actions/upload-pages-artifact@v3
         with:

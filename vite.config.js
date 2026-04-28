@@ -6,8 +6,8 @@ import { defineConfig } from "vite";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-/** GitHub project Pages: https://symatevo.github.io/RehabOrchestra/ — CI sets GITHUB_PAGES_BASE. */
-const base = process.env.GITHUB_PAGES_BASE || "/";
+/** Relative base so deploy works under any path (dev, GitHub Pages /repo/) without env in CI. */
+const base = "./";
 
 export default defineConfig({
   /** Pin root so builds work on Windows with Unicode paths / SUBST mismatch. */
