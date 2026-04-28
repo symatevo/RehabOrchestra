@@ -3,10 +3,9 @@
 /**
  * Absolute URLs for `public/` files on GitHub Pages (/RepoName/...).
  *
- * 1. __REHAB_PUBLISHED_BASE__ from vite.config define (homepage → /Repo/) — survives SES/import.meta quirks.
- * 2. Loading module `<script src=.../assets/...>`
- * 3. import.meta.url path
- * 4. import.meta.env.BASE_URL, inline script, location on github.io.
+ * 1. __REHAB_PUBLISHED_BASE__ (vite define from package.json homepage)
+ * 2. window.location.pathname on *.github.io (first segment ≈ repo folder)
+ * 3. DOM module script paths, import.meta.url, BASE_URL, __REHAB_PUBLIC_BASE__
  */
 export function publicUrl(path) {
   const trimmed = path.replace(/^\/+/, "");
@@ -24,6 +23,11 @@ function effectiveAssetBasePrefix() {
       : __REHAB_PUBLISHED_BASE__,
   );
   if (hard) return hard;
+
+  // Project Pages: app is at user.github.io/RepoName/ — read first path segment.
+  // Runs before import.meta fallbacks (SES/cached bundles can make those unreliable).
+  const ghPath = githubIoRepoBaseFromLocation();
+  if (ghPath) return ghPath;
 
   const fromDom = baseFromDomModuleScripts();
   if (fromDom) return fromDom;
@@ -43,15 +47,19 @@ function effectiveAssetBasePrefix() {
     if (typeof injected === "string" && injected.length >= 3) {
       return injected.endsWith("/") ? injected : `${injected}/`;
     }
-
-    const { hostname, pathname } = window.location;
-    if (hostname.endsWith(".github.io") || hostname === "github.io") {
-      const first = pathname.split("/").filter(Boolean)[0];
-      if (first) return `/${first}/`;
-    }
   }
 
   return raw === "./" ? "./" : "/";
+}
+
+/** user.github.io/Repo/... → /Repo/ (same idea as index.html inline script). */
+function githubIoRepoBaseFromLocation() {
+  if (typeof window === "undefined") return null;
+  const { hostname, pathname } = window.location;
+  if (!(hostname.endsWith(".github.io") || hostname === "github.io")) return null;
+  const first = pathname.split("/").filter(Boolean)[0];
+  if (!first) return null;
+  return `/${first}/`;
 }
 
 function normalizeSlashBase(b) {
