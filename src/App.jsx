@@ -233,7 +233,7 @@ function SetupScreen() {
         </div>
       </div>
 
-      <div className="mt-auto mb-8 flex shrink-0 flex-col items-center gap-3">
+      <div className="relative mt-auto mb-8 flex max-sm:mb-20 max-sm:z-[1010] shrink-0 flex-col items-center gap-3">
         
         {damagedSide && !lobbyCameraReady && (
           <div className="w-full max-w-xs">
