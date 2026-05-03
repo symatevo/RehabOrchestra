@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { useGameStore } from "../../store/useGameStore.js";
 import { publicUrl } from "../../utils/publicUrl.js";
+import { useOrchestraSpriteShrinkMul } from "./useOrchestraSpriteShrinkMul.js";
 
 // All dimensions verified from actual image pixel sizes + CSS position tables.
 const PLAYER_VARIANTS = {
@@ -118,7 +119,7 @@ export function InstrumentSpritePlayer({
   // are NOT included in the JSX style prop below.
   useLayoutEffect(() => {
     applyFrame("idle", 0);
-  }, [variants]); // re-prime if variants reference changes (practically never)
+  }, [variants, scale]);
 
   // Trigger new animation when a matching note arrives.
   useEffect(() => {
@@ -147,7 +148,7 @@ export function InstrumentSpritePlayer({
     };
     // Apply frame 0 of the new variant immediately — no React render needed.
     applyFrame(variant, 0);
-  }, [lastNote, playerId, variants]);
+  }, [lastNote, playerId, variants, scale]);
 
   // RAF loop — drives frame stepping directly on the DOM.
   useEffect(() => {
@@ -176,7 +177,7 @@ export function InstrumentSpritePlayer({
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [screen, variants]);
+  }, [screen, variants, scale]);
 
   if (screen !== "playing") return null;
 
@@ -199,6 +200,7 @@ export function InstrumentSpritePlayer({
 
 export function CelloOrchestraOverlay() {
   const screen = useGameStore((s) => s.screen);
+  const { shrinkMul, celloBalanceMul } = useOrchestraSpriteShrinkMul();
   if (screen !== "playing") return null;
 
   return (
@@ -208,7 +210,7 @@ export function CelloOrchestraOverlay() {
           key={playerId}
           playerId={playerId}
           section="right"
-          scale={PLAYER_LAYOUT[i].scale}
+          scale={PLAYER_LAYOUT[i].scale * shrinkMul * celloBalanceMul}
           position={{ right: PLAYER_LAYOUT[i].right, bottom: PLAYER_LAYOUT[i].bottom }}
           zIndex={PLAYER_LAYOUT[i].z}
         />

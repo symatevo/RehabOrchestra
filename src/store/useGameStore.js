@@ -40,7 +40,7 @@ export const useGameStore = create((set, get) => ({
     });
   },
   cycleLevel: () => {
-    const order = ["level1", "level2", "level3", "level4"];
+    const order = ["level1", "level2", "level3", "level4", "level5"];
     const i = order.indexOf(get().levelId);
     const next = order[(i >= 0 ? i + 1 : 0) % order.length];
     set({ levelId: next });

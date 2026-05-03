@@ -1,7 +1,7 @@
 export const ORCHESTRA_CHALLENGES = [
-  { id: "raise", labelKey: "orchestraChallengeRaise", targetMs: 2600 },
-  { id: "center", labelKey: "orchestraChallengeCenter", targetMs: 2300 },
-  { id: "streak", labelKey: "orchestraChallengeStreak", targetCount: 4 },
+  { id: "raise", labelKey: "orchestraChallengeRaise", targetMs: 1800 },
+  { id: "center", labelKey: "orchestraChallengeCenter", targetMs: 1600 },
+  { id: "streak", labelKey: "orchestraChallengeStreak", targetCount: 3 },
 ];
 
 /**
@@ -19,7 +19,7 @@ export function stepOrchestraChallenge(state, input) {
   if (input.hit) streak += 1;
 
   if (cur.id === "raise") {
-    progress = input.handExpression01 >= 0.68 ? progress + input.deltaMs : 0;
+    progress = input.handExpression01 >= 0.58 ? progress + input.deltaMs : 0;
     progressed = progress >= cur.targetMs;
     return {
       index: progressed ? state.index + 1 : state.index,

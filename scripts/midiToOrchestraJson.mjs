@@ -2,12 +2,14 @@
  * MIDI → orchestra JSON (same shape as yarkhushtaSong.json).
  *
  * Usage:
- *   node scripts/midiToOrchestraJson.mjs <input.mid> <output.json> "Piece name"
+ *   node scripts/midiToOrchestraJson.mjs <input.mid> <output.json> "Piece name" [maxSec]
+ *
+ * Optional maxSec (5th arg): clip notes to 0..maxSec (still smooth note ends at clip).
  *
  * Paths are relative to the repo root (or absolute).
  *
  * Env:
- *   MIDI_EXCERPT_SEC — max wall-clock seconds (default 220)
+ *   MIDI_EXCERPT_SEC — max wall-clock seconds (default = full MIDI length + pad)
  *   MIDI_CHART_BPM — override header bpm for cue grid; if unset, uses heuristic
  *     (if first MIDI tempo > 160 → 80, else clamp raw to 60–120)
  *
@@ -33,7 +35,20 @@ const INSTRUMENT_ORDER = [
   "contrabass",
 ];
 
-const MAX_EXCERPT_SEC = Number(process.env.MIDI_EXCERPT_SEC) || 220;
+function excerptEndSec(midi) {
+  const env = process.env.MIDI_EXCERPT_SEC;
+  if (
+    env !== undefined &&
+    env !== "" &&
+    Number.isFinite(Number(env)) &&
+    Number(env) > 0
+  ) {
+    return Number(env);
+  }
+  const d = midi.duration;
+  if (typeof d === "number" && d > 1) return d + 1.5;
+  return 3600;
+}
 
 /** @param {number} midi */
 function pitchBucket(midi) {
@@ -104,6 +119,17 @@ const outPath = resolve(ROOT, outputRel);
 const buf = readFileSync(midiPath);
 const midi = new Midi(buf);
 
+let excerptEnd = excerptEndSec(midi);
+const clipArg = process.argv[5];
+if (
+  clipArg !== undefined &&
+  clipArg !== "" &&
+  Number.isFinite(Number(clipArg)) &&
+  Number(clipArg) > 0
+) {
+  excerptEnd = Number(clipArg);
+}
+
 const rawBpm = midi.header.tempos[0]?.bpm ?? 80;
 const chartBpmEnv = process.env.MIDI_CHART_BPM;
 const bpmRaw = chartBpmEnv
@@ -147,7 +173,7 @@ if (melodicTracks.length <= PIANO_REDUCTION_MAX_TRACKS) {
 
 for (const k of INSTRUMENT_ORDER) {
   buckets[k] = buckets[k]
-    .map((note) => clipNoteToExcerpt(note, MAX_EXCERPT_SEC))
+    .map((note) => clipNoteToExcerpt(note, excerptEnd))
     .filter(Boolean);
   buckets[k].sort((a, b) => a.time - b.time);
 }
@@ -158,7 +184,7 @@ for (const k of INSTRUMENT_ORDER) {
     maxEnd = Math.max(maxEnd, n.time + n.duration);
   }
 }
-const duration = Math.min(MAX_EXCERPT_SEC + 0.25, Math.max(maxEnd, 1) + 0.08);
+const duration = Math.min(excerptEnd + 0.5, Math.max(maxEnd, 1) + 0.08);
 
 const tracks = INSTRUMENT_ORDER.map((instrument, id) => ({
   id,
@@ -183,5 +209,5 @@ const out = {
 
 writeFileSync(outPath, `${JSON.stringify(out, null, 2)}\n`, "utf8");
 console.log(
-  `Wrote ${outPath}\n  source: ${midiPath}\n  title: ${pieceName}\n  excerpt: 0–${MAX_EXCERPT_SEC}s  duration: ${duration.toFixed(3)}s  bpm: ${bpm} (MIDI first tempo ${rawBpm})\n  notes: ${tracks.map((t) => `${t.instrument}=${t.length}`).join(", ")}`
+  `Wrote ${outPath}\n  source: ${midiPath}\n  title: ${pieceName}\n  clipEnd: ${excerptEnd.toFixed(3)}s  duration: ${duration.toFixed(3)}s  bpm: ${bpm} (MIDI first tempo ${rawBpm})\n  notes: ${tracks.map((t) => `${t.instrument}=${t.length}`).join(", ")}`
 );

@@ -15,6 +15,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "build:level1": "node scripts/midiToOrchestraJson.mjs \"public/music/song/Midi/carnival_animals_13_swan(c)pajares.mid\" src/data/orchestra/carnivalSwanSong.json \"Saint-Saëns — The Swan (Carnival of the Animals)\" 82",
     "build:level3": "node scripts/midiToOrchestraJson.mjs public/music/song/Midi/tchaikovsky_swan_lake_05_(c)lucarelli.mid src/data/orchestra/swanLakeSong.json \"Swan Lake (excerpt)\"",
     "build:level4": "node scripts/midiToOrchestraJson.mjs public/music/song/Midi/tchaikovsky_nutcracker_act-2_14_pas_des_deux_(c)yogore.mid src/data/orchestra/nutcrackerPasSong.json \"Nutcracker - Pas de deux (excerpt)\"",
     "cleanup:public": "node scripts/cleanupUnusedPublic.mjs"

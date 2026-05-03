@@ -6,14 +6,15 @@
  */
 import { getOrchestraMeta, getOrchestraTracks } from "./orchestraTracks.js";
 
-/**
- * @param {CueDef[]} chart
- */
+/** Beats between alternating down/up cues (tune 1 = every quarter, 2 = every half note, etc.) */
+const BEATS_PER_STROKE = 2;
+
+/** @param {CueDef[]} chart */
 function assignTravelFromRhythm(chart) {
   chart.forEach((c, i) => {
     const prevHit = i > 0 ? chart[i - 1].hitTime : Math.max(0, c.hitTime - 4);
-    const ioi = Math.max(0.85, c.hitTime - prevHit);
-    c.travel = Math.min(3.9, Math.max(2.05, ioi * 0.66));
+    const ioi = Math.max(0.82, c.hitTime - prevHit);
+    c.travel = Math.min(3.2, Math.max(1.35, ioi * 1.35));
   });
 }
 
@@ -69,135 +70,226 @@ function guessMidiFromName(name) {
   return (oct + 1) * 12 + sem;
 }
 
-/** @typedef {{ t: number; medianMidi: number; maxDur: number; maxVel: number }} RichCluster */
-
-/**
- * @param {NoteEv[]} notes
- * @param {number} windowSec
- * @returns {RichCluster[]}
- */
-function buildRichClusters(notes, windowSec) {
-  /** @type {RichCluster[]} */
+/** @param {NoteEv[]} notes @param {number} mergeSec */
+function mergeOnsets(notes, mergeSec) {
+  if (!notes.length) return [];
+  /** @type {number[]} */
   const out = [];
-  /** @type {NoteEv[]} */
-  let cur = [];
-  const flush = () => {
-    if (!cur.length) return;
-    const mids = [...cur.map((x) => x.midi)].sort((a, b) => a - b);
-    const med = mids[Math.floor(mids.length / 2)];
-    let tw = 0;
-    let wSum = 0;
-    let maxD = 0;
-    let maxV = 0;
-    for (const x of cur) {
-      const w = 0.2 + x.vel;
-      tw += x.t * w;
-      wSum += w;
-      maxD = Math.max(maxD, x.dur);
-      maxV = Math.max(maxV, x.vel);
-    }
-    out.push({ t: tw / wSum, medianMidi: med, maxDur: maxD, maxVel: maxV });
-    cur = [];
-  };
   for (const n of notes) {
-    if (!cur.length || n.t - cur[0].t <= windowSec) {
-      cur.push(n);
-    } else {
-      flush();
-      cur = [n];
+    if (!out.length || n.t - out[out.length - 1] >= mergeSec) {
+      out.push(n.t);
     }
   }
-  flush();
   return out;
 }
 
 /**
- * How far apart cues are by piece progress: slow → denser → easy again.
- * @param {number} u 0..1 normalized time in piece
- * @param {number} beatSec
+ * Regular conducting grid: one stroke every `BEATS_PER_STROKE` quarter-notes.
  */
-function minGapForProgress(u, beatSec) {
-  if (u <= 0.16) return Math.max(3.55, beatSec * 6.5);
-  if (u <= 0.38) return Math.max(2.65, beatSec * 5);
-  if (u <= 0.62) return Math.max(1.95, beatSec * 3.85);
-  if (u <= 0.8) return Math.max(1.72, beatSec * 3.35);
-  return Math.max(2.95, beatSec * 5.5);
-}
-
-/**
- * @param {RichCluster[]} clusters
- * @param {number} startAt
- * @param {number} stopAt
- * @param {number} beatSec
- */
-function thinClustersVariable(clusters, startAt, stopAt, beatSec) {
-  const span = Math.max(1e-6, stopAt - startAt);
-  /** @type {RichCluster[]} */
+function buildStrokeGridTimes(startAt, stopAt, beatSec) {
+  const step = BEATS_PER_STROKE * beatSec;
+  /** @type {number[]} */
   const out = [];
-  let last = -1e9;
-  for (const c of clusters) {
-    const u = (c.t - startAt) / span;
-    const needGap = minGapForProgress(u, beatSec);
-    if (c.t - last >= needGap) {
-      out.push(c);
-      last = c.t;
+  for (let k = 0; k < 8000; k += 1) {
+    const ht = startAt + k * step;
+    if (ht > stopAt - 0.04) break;
+    out.push(ht);
+  }
+  return out;
+}
+
+/** @param {number[]} gridTimes @param {number} target */
+function nearestGridIndex(gridTimes, target) {
+  let best = 0;
+  let bd = Infinity;
+  for (let i = 0; i < gridTimes.length; i += 1) {
+    const d = Math.abs(gridTimes[i] - target);
+    if (d < bd) {
+      bd = d;
+      best = i;
+    }
+  }
+  return best;
+}
+
+/**
+ * Fist (~40% progress) plus 0–2 holds anchored to largest MIDI rests (nearest grid indices).
+ */
+function buildHoldFistPlan(gridTimes, onsets, startAt, stopAt, beatSec) {
+  const N = gridTimes.length;
+  const span = Math.max(1e-6, stopAt - startAt);
+
+  const fistCueIndex = N >= 10 ? Math.max(3, Math.min(N - 4, Math.floor(N * 0.4))) : -1;
+
+  /** @type {Set<number>} */
+  const holdCueIds = new Set();
+  if (N < 12 || onsets.length < 4) {
+    return { fistCueIndex, holdCueIds };
+  }
+
+  /** @type {{ gap: number; idx: number }[]} */
+  const ranked = [];
+  for (let i = 0; i < onsets.length - 1; i += 1) {
+    const gap = onsets[i + 1] - onsets[i];
+    const mid = (onsets[i] + onsets[i + 1]) / 2;
+    const u = (mid - startAt) / span;
+    if (u < 0.18 || u > 0.82) continue;
+    if (gap < beatSec * 1.02) continue;
+    ranked.push({ gap, idx: nearestGridIndex(gridTimes, mid) });
+  }
+  ranked.sort((a, b) => b.gap - a.gap);
+
+  const want = N >= 18 ? 2 : 1;
+  for (const r of ranked) {
+    if (holdCueIds.size >= want) break;
+    if (
+      r.idx === fistCueIndex ||
+      r.idx === fistCueIndex - 1 ||
+      r.idx === fistCueIndex + 1
+    ) {
+      continue;
+    }
+    let tooClose = false;
+    for (const h of holdCueIds) {
+      if (Math.abs(h - r.idx) < 6) {
+        tooClose = true;
+        break;
+      }
+    }
+    if (!tooClose) holdCueIds.add(r.idx);
+  }
+
+  return { fistCueIndex, holdCueIds };
+}
+
+/**
+ * @param {number} i cue index along grid
+ * @param {number} hitTime
+ * @param {number[]} gridTimes
+ * @param {number} span
+ * @param {number} startAt
+ * @param {number} beatSec
+ * @param {{ fistCueIndex: number; holdCueIds: Set<number> }} plan
+ */
+function conductorKindSlot(i, hitTime, gridTimes, span, startAt, beatSec, plan) {
+  const u = (hitTime - startAt) / span;
+  if (plan.fistCueIndex >= 0 && i === plan.fistCueIndex) {
+    return { kind: /** @type {CueKind} */ ("close") };
+  }
+
+  const gapToNext =
+    i < gridTimes.length - 1 ? gridTimes[i + 1] - hitTime : beatSec * 8;
+
+  if (plan.holdCueIds.has(i) && u >= 0.12 && u <= 0.9) {
+    const holdSec = Math.max(
+      1.05,
+      Math.min(2.35, Math.max(gapToNext * 0.55, beatSec * 1.55))
+    );
+    return { kind: /** @type {CueKind} */ ("holdUp"), holdSec };
+  }
+
+  return { kind: /** @type {CueKind} */ ("down") };
+}
+
+/**
+ * Shift each cue a few milliseconds toward the closest MIDI onset (within neighbours) so strokes
+ * “breathe” with the melody without reshuffling cues.
+ */
+function microWarpTowardOnsets(chart, onsets, maxSec = 0.042) {
+  if (!chart.length || !onsets.length) return;
+  for (let i = 0; i < chart.length; i += 1) {
+    const c = chart[i];
+    const lo = i > 0 ? chart[i - 1].hitTime + 0.065 : Number.NEGATIVE_INFINITY;
+    const hi =
+      i < chart.length - 1 ? chart[i + 1].hitTime - 0.065 : Number.POSITIVE_INFINITY;
+    let bestT = c.hitTime;
+    let bestDist = Infinity;
+    for (const o of onsets) {
+      if (o <= lo || o >= hi) continue;
+      const d = Math.abs(o - c.hitTime);
+      if (d <= maxSec && d < bestDist) {
+        bestDist = d;
+        bestT = o;
+      }
+    }
+    c.hitTime = Number(bestT.toFixed(4));
+  }
+}
+
+/**
+ * Plain strokes alternate down/up. Each hold mirrors the gesture *opposite* the last plain
+ * arrow; the first plain cue after the hold repeats that stroke (“down, holdUp, down…” /
+ * “up, holdDown, up…”).
+ * @param {CueDef[]} chart
+ */
+function applyVerticalConductingSequence(chart) {
+  let prevPlain = /** @type {"down" | "up"} */ ("up");
+  let pendingRepeat = /** @type {"down" | "up" | null} */ (null);
+
+  for (const c of chart) {
+    if (c.kind === "close") continue;
+
+    const isHold =
+      (typeof c.holdSec === "number" && c.holdSec > 0) ||
+      c.kind === "holdUp" ||
+      c.kind === "holdDown";
+
+    if (isHold) {
+      c.kind = prevPlain === "down" ? "holdUp" : "holdDown";
+      pendingRepeat = prevPlain;
+      continue;
+    }
+
+    if (pendingRepeat !== null) {
+      c.kind = pendingRepeat;
+      prevPlain = pendingRepeat;
+      pendingRepeat = null;
+      continue;
+    }
+
+    const next = prevPlain === "down" ? "up" : "down";
+    c.kind = next;
+    prevPlain = next;
+  }
+}
+
+/**
+ * After a hold cue, drop any plain cues whose hitTime falls before `holdEnd + buffer`.
+ * @param {CueDef[]} chart
+ * @param {number} beatSec
+ */
+function trimCuesInsideHolds(chart, beatSec) {
+  const buffer = Math.max(0.18, beatSec * 0.38);
+  /** @type {CueDef[]} */
+  const out = [];
+  let blockUntil = -Infinity;
+  for (const c of chart) {
+    if (c.hitTime < blockUntil) continue;
+    out.push(c);
+    if ((c.kind === "holdUp" || c.kind === "holdDown") && typeof c.holdSec === "number") {
+      blockUntil = c.hitTime + c.holdSec + buffer;
     }
   }
   return out;
 }
 
-/** Classic four-beat outline: downbeat / up / down / up (simplified conducting). */
-const CONDUCTOR_BEAT = /** @type {const} */ (["down", "up", "down", "up"]);
-
 /**
- * @param {RichCluster} c
- * @param {RichCluster | null} next
- * @param {number} delta medianMidi vs previous cluster
+ * Snap strictly increasing hit times onto eighth subdivisions without reordering cues.
+ * @param {CueDef[]} chart
  * @param {number} beatSec
- * @param {number} cueIndex
- * @param {number} u progress 0..1 in piece
- * @returns {{ kind: CueKind; holdSec?: number }}
  */
-function conductorKind(c, next, delta, beatSec, cueIndex, u) {
-  const gapToNext = next ? next.t - c.t : beatSec * 8;
-  const marcato = c.maxVel >= 0.8 && c.maxDur < beatSec * 0.5;
-  const longNote = c.maxDur >= beatSec * 1.55;
-  const longGap = gapToNext >= beatSec * 3.15;
-
-  const holdMid =
-    u >= 0.2 &&
-    u <= 0.72 &&
-    longGap &&
-    cueIndex % 7 === 4 &&
-    (longNote || gapToNext >= beatSec * 3.85);
-  const holdWind =
-    u > 0.72 &&
-    u < 0.84 &&
-    longGap &&
-    gapToNext >= beatSec * 4.4 &&
-    cueIndex % 9 === 5;
-
-  if (holdMid || holdWind) {
-    const holdSec = Math.min(
-      2.65,
-      Math.max(1.12, Math.min(gapToNext * 0.42, c.maxDur + beatSec * 0.72))
-    );
-    const hiPhrase = c.medianMidi >= 62 || delta > 2;
-    if (hiPhrase) return { kind: "holdUp", holdSec };
-    return { kind: "holdDown", holdSec };
+function quantizePreserveOrder(chart, beatSec) {
+  const step = beatSec / 8;
+  const minBump = Math.max(step * 0.25, 0.068);
+  let last = -Infinity;
+  for (const c of chart) {
+    let h = Math.round(c.hitTime / step) * step;
+    if (h <= last + minBump - 1e-6) {
+      h = Number((last + minBump).toFixed(5));
+    }
+    c.hitTime = Number(h.toFixed(4));
+    last = c.hitTime;
   }
-
-  const fistMid = u >= 0.26 && u <= 0.66 && cueIndex % 11 === 8;
-  const fistOk = u >= 0.14 && u <= 0.88 && (marcato || fistMid);
-  if (fistOk && !(u < 0.22 && !marcato)) {
-    return { kind: "close" };
-  }
-
-  const stroke = cueIndex % 4;
-  let kind = CONDUCTOR_BEAT[stroke];
-  if (delta > 6) kind = "up";
-  if (delta < -6) kind = "down";
-  return { kind };
 }
 
 /**
@@ -214,74 +306,50 @@ export function buildCueChart(damagedSide, levelId) {
   const stopAt = Math.max(startAt + beatSec * 4, meta.durationSec - beatSec * 3);
   const span = Math.max(1e-6, stopAt - startAt);
 
-  const clusterWin = Math.min(0.42, beatSec * 0.55);
   const notes = collectNotes(tracks, startAt, stopAt);
-  const rich = thinClustersVariable(
-    buildRichClusters(notes, clusterWin),
-    startAt,
-    stopAt,
-    beatSec
-  );
+  const mergedOnsets = mergeOnsets(notes, 0.045);
+
+  const gridTimes = buildStrokeGridTimes(startAt, stopAt, beatSec);
+  const plan = buildHoldFistPlan(gridTimes, mergedOnsets, startAt, stopAt, beatSec);
 
   /** @type {CueDef[]} */
-  const chart = [];
+  let chart = gridTimes.map((hitTime, i) => {
+    const { kind, holdSec } = conductorKindSlot(
+      i,
+      hitTime,
+      gridTimes,
+      span,
+      startAt,
+      beatSec,
+      plan
+    );
+    return {
+      id: i,
+      hitTime,
+      side: /** @type {CueSide} */ ("both"),
+      travel: 2.85,
+      kind,
+      ...(holdSec !== undefined ? { holdSec } : {}),
+    };
+  });
 
-  if (!rich.length) {
-    let t = startAt;
-    let id = 0;
-    while (t <= stopAt) {
-      const u = (t - startAt) / span;
-      const gapBeats =
-        u <= 0.16 ? 6.8 : u <= 0.38 ? 5.4 : u <= 0.62 ? 4.3 : u <= 0.8 ? 3.7 : 6;
-      const fakeNext =
-        t + gapBeats * beatSec <= stopAt
-          ? {
-              t: t + gapBeats * beatSec,
-              medianMidi: 60,
-              maxDur: 0.15,
-              maxVel: 0.5,
-            }
-          : null;
-      const fakeC = { t, medianMidi: 60 + (id % 3) * 2, maxDur: 0.2, maxVel: 0.55 };
-      const prevMidi = id > 0 ? 60 + ((id - 1) % 3) * 2 : 60;
-      const delta = fakeC.medianMidi - prevMidi;
-      const { kind, holdSec } = conductorKind(fakeC, fakeNext, delta, beatSec, id, u);
-      chart.push({
-        id: id++,
-        hitTime: Number(t.toFixed(3)),
-        side: "both",
-        travel: 3.1,
-        kind,
-        ...(holdSec ? { holdSec } : {}),
-      });
-      t += gapBeats * beatSec;
-    }
-  } else {
-    let id = 0;
-    for (let i = 0; i < rich.length; i += 1) {
-      const c = rich[i];
-      const next = rich[i + 1] ?? null;
-      const prevMidi = i > 0 ? rich[i - 1].medianMidi : 60;
-      const delta = c.medianMidi - prevMidi;
-      const u = (c.t - startAt) / span;
-      const { kind, holdSec } = conductorKind(c, next, delta, beatSec, id, u);
-      chart.push({
-        id: id++,
-        hitTime: Number(c.t.toFixed(3)),
-        side: "both",
-        travel: 3.1,
-        kind,
-        ...(holdSec ? { holdSec } : {}),
-      });
-    }
-  }
+  microWarpTowardOnsets(chart, mergedOnsets);
+  chart.forEach((c, idx) => {
+    c.id = idx;
+  });
 
+  applyVerticalConductingSequence(chart);
+  chart = trimCuesInsideHolds(chart, beatSec);
+  chart.forEach((c, idx) => {
+    c.id = idx;
+  });
+  quantizePreserveOrder(chart, beatSec);
   assignTravelFromRhythm(chart);
   return chart;
 }
 
 export function travelSecForCue(_cueIndex, _total) {
-  return 3.35;
+  return 2.95;
 }
 
 /**

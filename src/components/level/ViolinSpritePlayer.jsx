@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { useGameStore } from "../../store/useGameStore.js";
 import { publicUrl } from "../../utils/publicUrl.js";
+import { useOrchestraSpriteShrinkMul } from "./useOrchestraSpriteShrinkMul.js";
 
 const PLAYER_VARIANTS = {
   viola1: {
@@ -194,6 +195,7 @@ const _ALL_SPRITE_URLS = (() => {
 
 export function ViolinOrchestraOverlay() {
   const screen = useGameStore((s) => s.screen);
+  const { shrinkMul } = useOrchestraSpriteShrinkMul();
   if (screen !== "playing") return null;
 
   return (
@@ -220,7 +222,7 @@ export function ViolinOrchestraOverlay() {
           key={playerId}
           playerId={playerId}
           section="left"
-          scale={PLAYER_LAYOUT[i].scale}
+          scale={PLAYER_LAYOUT[i].scale * shrinkMul}
           position={{ left: PLAYER_LAYOUT[i].left, bottom: PLAYER_LAYOUT[i].bottom }}
           zIndex={PLAYER_LAYOUT[i].z}
         />

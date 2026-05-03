@@ -13,7 +13,13 @@ import { t } from "../i18n/strings.js";
 import { computeWorkingFist } from "../utils/workingHandFist.js";
 import { computeHandExpressionFromPose } from "../utils/handExpressionFromPose.js";
 
-const LEVEL_BADGE = { level1: "L1", level2: "L2", level3: "L3", level4: "L4" };
+const LEVEL_BADGE = {
+  level1: "L1",
+  level2: "L2",
+  level3: "L3",
+  level4: "L4",
+  level5: "L5",
+};
 
 export function CameraWidget() {
   const [start, setStart] = useState(false);

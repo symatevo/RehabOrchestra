@@ -8,10 +8,7 @@ import {
 } from "../data/cueTiming.js";
 import { orchestraToneEngine } from "../audio/orchestraToneEngine.js";
 import { useGameStore } from "../store/useGameStore.js";
-import {
-  playCueHitSfx,
-  playMissDuck,
-} from "../audio/missFx.js";
+import { playMissDuck } from "../audio/missFx.js";
 import { ORCHESTRA_CHALLENGES, stepOrchestraChallenge } from "../level/orchestraChallenges.js";
 import { nextPerformanceEnergy } from "../level/performanceEnergy.js";
 import { CueOverlay } from "./CueOverlay.jsx";
@@ -146,25 +143,8 @@ export function GameSession() {
       /** @type {null | 'perfect' | 'late'} */
       let hitKind = null;
 
-      if (!audioStartedRef.current) {
-        orchestraToneEngine.setCueCompliance(1);
-      } else {
-        let gateTarget = 1;
-        for (const cue of ch) {
-          if (st.isCueResolved(cue.id)) continue;
-          const travel = cueTravelSec(cue);
-          const spawn = cue.hitTime - travel;
-          const end = cueActiveWindowEnd(cue);
-          if (t < spawn || t > end) continue;
-          const m = cueMatchScore(cue, st.handExpression01, st.workingFist);
-          gateTarget = Math.min(gateTarget, m);
-        }
-        orchestraToneEngine.setCueCompliance(gateTarget);
-      }
-
       orchestraToneEngine.setExpression(st.handExpression01);
       orchestraToneEngine.setZone(st.handZoneIndex);
-      orchestraToneEngine.setDuckMultiplier(st.musicDuckMultiplier);
       orchestraToneEngine.setEnergy(st.performanceEnergy);
 
       for (const cue of ch) {
@@ -189,7 +169,7 @@ export function GameSession() {
         rec.total += dtSec;
         holdAccumRef.current[cue.id] = rec;
 
-        if (m >= 0.62) {
+        if (m >= 0.48) {
           const lastSp = holdSparkleLastRef.current[cue.id] ?? 0;
           if (now - lastSp >= HOLD_SPARKLE_INTERVAL_MS) {
             holdSparkleLastRef.current[cue.id] = now;
@@ -205,7 +185,7 @@ export function GameSession() {
           if (useGameStore.getState().isCueResolved(cue.id)) continue;
           if ((cue.kind ?? "close") !== "close") continue;
           const p = cueProgress(hitT, cue);
-          if (p >= 0.72 && p <= 1.22) {
+          if (p >= 0.62 && p <= 1.38) {
             candidates.push({ cue, p });
           }
         }
@@ -213,11 +193,10 @@ export function GameSession() {
           candidates.sort((a, b) => Math.abs(a.p - 1) - Math.abs(b.p - 1));
           const { cue: best, p } = candidates[0];
           useGameStore.getState().markCueResolved(best.id);
-          const timing = p <= 1.03 ? "perfect" : "late";
+          const timing = p <= 1.08 ? "perfect" : "late";
           if (timing === "perfect") {
             useGameStore.getState().setFeedback("PERFECT");
             useGameStore.getState().addScore(100);
-            playCueHitSfx("perfect");
             useGameStore.getState().pulseBloom();
             useGameStore.getState().pulseGreatFx();
             orchestraToneEngine.registerCueResult("perfect");
@@ -225,7 +204,6 @@ export function GameSession() {
           } else {
             useGameStore.getState().setFeedback("LATE");
             useGameStore.getState().addScore(48);
-            playCueHitSfx("late");
             orchestraToneEngine.registerCueResult("late");
             hitKind = "late";
           }
@@ -251,15 +229,14 @@ export function GameSession() {
           const kind = cue.kind ?? "close";
           if (kind === "holdUp" || kind === "holdDown") continue;
           if (kind === "close") continue;
-          if (t < cue.hitTime - 0.22 || t > cue.hitTime + 0.34) continue;
+          if (t < cue.hitTime - 0.3 || t > cue.hitTime + 0.48) continue;
           const m = cueMatchScore(cue, st.handExpression01, st.workingFist);
-          if (m < 0.62) continue;
+          if (m < 0.48) continue;
           useGameStore.getState().markCueResolved(cue.id);
-          const timing = t <= cue.hitTime + 0.11 ? "perfect" : "late";
+          const timing = t <= cue.hitTime + 0.18 ? "perfect" : "late";
           if (timing === "perfect") {
             useGameStore.getState().setFeedback("PERFECT");
             useGameStore.getState().addScore(100);
-            playCueHitSfx("perfect");
             useGameStore.getState().pulseBloom();
             useGameStore.getState().pulseGreatFx();
             orchestraToneEngine.registerCueResult("perfect");
@@ -267,7 +244,6 @@ export function GameSession() {
           } else {
             useGameStore.getState().setFeedback("LATE");
             useGameStore.getState().addScore(48);
-            playCueHitSfx("late");
             orchestraToneEngine.registerCueResult("late");
             hitKind = "late";
           }
@@ -299,12 +275,11 @@ export function GameSession() {
           delete holdSparkleLastRef.current[cue.id];
           const ratio = rec && rec.total > 0.05 ? rec.good / rec.total : 0;
           useGameStore.getState().markCueResolved(cue.id);
-          if (ratio >= 0.5) {
-            const timing = ratio >= 0.72 ? "perfect" : "late";
+          if (ratio >= 0.42) {
+            const timing = ratio >= 0.62 ? "perfect" : "late";
             if (timing === "perfect") {
               useGameStore.getState().setFeedback("PERFECT");
               useGameStore.getState().addScore(100);
-              playCueHitSfx("perfect");
               useGameStore.getState().pulseBloom();
               useGameStore.getState().pulseGreatFx();
               orchestraToneEngine.registerCueResult("perfect");
@@ -312,7 +287,6 @@ export function GameSession() {
             } else {
               useGameStore.getState().setFeedback("LATE");
               useGameStore.getState().addScore(48);
-              playCueHitSfx("late");
               orchestraToneEngine.registerCueResult("late");
               hitKind = "late";
             }

@@ -1,23 +1,26 @@
 import * as Tone from "tone";
-import { useGameStore } from "../store/useGameStore.js";
 
 let ctxCache = null;
 
 function ensureCtx() {
   if (ctxCache) return ctxCache;
+  try {
+    const raw = Tone.getContext()?.rawContext;
+    if (raw instanceof AudioContext) {
+      ctxCache = raw;
+      return ctxCache;
+    }
+  } catch (_) {
+    /* ignore */
+  }
   ctxCache = new AudioContext();
   return ctxCache;
 }
 
-/** Prefer Tone's clock when the orchestra is running so SFX line up with Transport. */
-function audioNow() {
-  try {
-    const raw = Tone.getContext()?.rawContext;
-    if (raw && typeof raw.currentTime === "number") return raw.currentTime;
-  } catch (_) {
-    /* ignore */
-  }
-  return ensureCtx().currentTime;
+/** Prefer raw AudioContext scheduling so cue chimes latch to the DAC clock immediately (Tone.now can jitter vs. RAF). */
+function sfxStartTime(ctx) {
+  const c = ctx.currentTime;
+  return Number.isFinite(c) ? c : 0;
 }
 
 export function resumeAudioContext() {
@@ -25,13 +28,8 @@ export function resumeAudioContext() {
   return ctx.resume().catch(() => {});
 }
 
-/** Ducks music volume briefly; GameSession applies `musicDuckMultiplier` each frame. */
-export function playMissDuck() {
-  useGameStore.setState({ musicDuckMultiplier: 0.52 });
-  window.setTimeout(() => {
-    useGameStore.setState({ musicDuckMultiplier: 1 });
-  }, 200);
-}
+/** Miss feedback is visual + light accent only; orchestra level stays fixed in `orchestraToneEngine`. */
+export function playMissDuck() {}
 
 /**
  * Short drum-like transient + bright chime, timed to the shared audio clock.
@@ -40,7 +38,7 @@ export function playMissDuck() {
 export function playCueHitSfx(kind) {
   const ctx = ensureCtx();
   if (ctx.state === "suspended") ctx.resume().catch(() => {});
-  const t0 = audioNow();
+  const t0 = sfxStartTime(ctx);
   const late = kind === "late";
   const chimeGain = late ? 0.72 : 1;
 
